@@ -14,6 +14,7 @@ def yes_no(value):
     else:
         raise ValueError
 
+
 class Prompt(object):
 
     def __init__(self, type=None, choices=None, default=None):
@@ -53,7 +54,17 @@ class Prompt(object):
             except argparse.ArgumentError as exc:
                 print(exc)
 
-    def prompt_multiline(self, message, eof='.'):
-        message += ' (finish with "{}")'.format(eof)
+
+class MultiPrompt(object):
+
+    def __init__(self, eof='.'):
+        self.eof = eof
+
+    @staticmethod
+    def input():
+        return raw_input()
+
+    def prompt(self, message):
+        message += ' (finish with "{}")'.format(self.eof)
         print(message)
-        return '\n'.join(iter(self._input, eof))
+        return '\n'.join(iter(self.input, self.eof))
