@@ -37,10 +37,10 @@ class Prompt(object):
 
     def build_prompt(self, message):
         if self.choices:
-            message += ' ({})'.format(', '.join(["'{}'".format(choice)
+            message += ' ({0})'.format(', '.join(["'{0}'".format(choice)
                                                  for choice in self.choices]))
         if self.type:
-            message += ' ({})'.format('type: {}'.format(self.type.__name__))
+            message += ' ({0})'.format('type: {0}'.format(self.type.__name__))
         return message + ' '
 
     def prompt(self, message):
@@ -65,6 +65,6 @@ class MultiPrompt(object):
         return raw_input()
 
     def prompt(self, message):
-        message += ' (finish with "{}")'.format(self.eof)
+        message += ' (finish with "{0}")'.format(self.eof)
         print(message)
         return '\n'.join(iter(self.input, self.eof))
