@@ -93,4 +93,34 @@ class TestDefaultChoices(TestCase):
         result = self.prompt.prompt('ok or ko ?')
         self.assertEqual(result, 'other')
 
+class TestBuildPrompt(TestCase):
 
+    def setUp(self):
+        self.prompt = Prompt()
+
+    def test_prompt(self):
+        self.assertEqual(self.prompt.build_prompt('ok'), 'ok ')
+
+class TestBuildPromptDefault(TestCase):
+
+    def setUp(self):
+        self.prompt = Prompt(default='yes')
+
+    def test_prompt(self):
+        self.assertEqual(self.prompt.build_prompt('ok'), 'ok (default: yes) ')
+
+class TestBuildPromptDefault(TestCase):
+
+    def setUp(self):
+        self.prompt = Prompt(choices=('yes', 'no'))
+
+    def test_prompt(self):
+        self.assertEqual(self.prompt.build_prompt('ok'), "ok ('yes', 'no') ")
+
+class TestBuildPromptType(TestCase):
+
+    def setUp(self):
+        self.prompt = Prompt(type=int)
+
+    def test_prompt(self):
+        self.assertEqual(self.prompt.build_prompt('ok'), "ok (type: int) ")

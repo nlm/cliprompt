@@ -36,11 +36,13 @@ class Prompt(object):
         return result
 
     def build_prompt(self, message):
-        if self.choices:
+        if self.choices is not None:
             message += ' ({0})'.format(', '.join(["'{0}'".format(choice)
                                                  for choice in self.choices]))
-        if self.type:
+        if self.type is not None:
             message += ' ({0})'.format('type: {0}'.format(self.type.__name__))
+        if self.default is not None:
+            message += ' (default: {0})'.format(self.default)
         return message + ' '
 
     def prompt(self, message):
