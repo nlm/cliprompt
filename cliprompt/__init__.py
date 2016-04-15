@@ -1,58 +1,56 @@
+from __future__ import absolute_import, print_function
 import argparse
 import re
+from .types import yes_no
+
 
 class ArgumentParser(argparse.ArgumentParser):
 
     def error(self, message):
-        raise
-
-def yes_no(value):
-    if re.match(r'^[Yy]([Ee][Ss])?$', value):
-        return True
-    elif re.match('^[Nn]([Oo])?$', value):
-        return False
-    else:
-        raise ValueError
+        raise argparse.ArgumentError(None, message)
 
 
 class Prompt(object):
 
     def __init__(self, type=None, choices=None, default=None):
         self.type = type
-        choices = list(choices) if choices is not None else None
-        self.choices = choices
+        self.choices = list(choices) if choices is not None else None
         self.default = default
-        if (self.default is not None and
-            self.choices is not None):
-            self.choices.append('')
         self.parser = ArgumentParser()
-        self.parser.add_argument('answer', type=type, choices=choices)
+        self.parser.add_argument('answer', type=type,
+                                 choices=choices, default=default,
+                                 nargs=('?' if default is not None else None))
 
     @staticmethod
     def input(prompt):
         result = raw_input(prompt)
         if result == '':
-            return None
-        return result
+            return []
+        return [result]
 
     def build_prompt(self, message):
+        suffix = []
+
         if self.choices is not None:
-            message += ' ({0})'.format(', '.join(["'{0}'".format(choice)
-                                                 for choice in self.choices]))
+            suffix.append('choices: {0}'
+                          .format(', '.join(['"{0}"'.format(choice)
+                                             for choice in self.choices])))
+
         if self.type is not None:
-            message += ' ({0})'.format('type: {0}'.format(self.type.__name__))
+            suffix.append('type: "{0}"'.format(self.type.__name__))
+
         if self.default is not None:
-            message += ' (default: {0})'.format(self.default)
-        return message + ' '
+            suffix.append('default: "{0}"'.format(self.default))
+
+        return (message +
+                (' ({0})'.format(', '.join(suffix)) if len(suffix) else '') +
+                ' ')
 
     def prompt(self, message):
         message = self.build_prompt(message)
         while True:
             try:
-                result = self.parser.parse_args([self.input(message)])
-                if result.answer == '' and self.default is not None:
-                    return self.default
-                return result.answer
+                return self.parser.parse_args(self.input(message)).answer
             except argparse.ArgumentError as exc:
                 print(exc)
 
