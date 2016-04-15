@@ -2,7 +2,7 @@ from setuptools import setup,find_packages
 
 setup(
     name = "cliprompt",
-    version = "0.1",
+    version = "0.2",
     packages = ['cliprompt'],
     author = "Nicolas Limage",
     author_email = 'github@xephon.org',
