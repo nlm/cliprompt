@@ -9,7 +9,11 @@ class FakePrompt(Prompt):
         self.fakeinputs = list(fakeinputs)
 
     def input(self, message):
-        return self.fakeinputs.pop(0)
+        value = self.fakeinputs.pop(0)
+        if value is None:
+            return []
+        else:
+            return [value]
 
 
 class TestBase(TestCase):
@@ -18,7 +22,8 @@ class TestBase(TestCase):
         self.prompt = FakePrompt(['ok'])
 
     def test_base(self):
-        self.prompt.prompt('ok ?')
+        result = self.prompt.prompt('ok ?')
+        self.assertEqual(result, 'ok')
 
 
 class TestChoices(TestCase):
@@ -31,10 +36,10 @@ class TestChoices(TestCase):
         self.assertEqual(result, 'ok')
 
 
-class TestChoicesMismatch(TestCase):
+class TestChoicesMulti(TestCase):
 
     def setUp(self):
-        self.prompt = FakePrompt(['', 'wtf', 'ok', 'bla', 'ko'],
+        self.prompt = FakePrompt([None, 'wtf', 'ok', 'bla', 'ko'],
                                  choices=['ok', 'ko'])
 
     def test_choices(self):
@@ -42,11 +47,34 @@ class TestChoicesMismatch(TestCase):
         self.assertEqual(result, 'ok')
 
 
-class TestChoicesNone(TestCase):
+class TestChoicesMultiNoMatch(TestCase):
 
     def setUp(self):
-        self.prompt = FakePrompt(['', 'wtf', 'bla'],
+        self.prompt = FakePrompt([None, 'wtf', 'bla', 'meh'],
                                  choices=['ok', 'ko'])
+
+    def test_choices(self):
+        self.assertRaises(IndexError, self.prompt.prompt, 'ok or ko ?')
+
+
+class TestChoicesMultiNoMatchDefault(TestCase):
+
+    def setUp(self):
+        self.prompt = FakePrompt(['wtf', 'blah', 'meh', None],
+                                 choices=('ok', 'ko'),
+                                 default='ok')
+
+    def test_choices(self):
+        result = self.prompt.prompt('ok or ko ?')
+        self.assertEqual(result, 'ok')
+
+
+class TestChoicesDefaultMismatch(TestCase):
+
+    def setUp(self):
+        self.prompt = FakePrompt(['wtf', 'blah', None],
+                                 choices=('ok', 'ko'),
+                                 default='somethingincorrect')
 
     def test_choices(self):
         self.assertRaises(IndexError, self.prompt.prompt, 'ok or ko ?')
@@ -55,7 +83,7 @@ class TestChoicesNone(TestCase):
 class TestTypeYesNo(TestCase):
 
     def setUp(self):
-        self.prompt = FakePrompt(['', 'wtf', 'Nooo', 'Nono', 'yeS', 'no'],
+        self.prompt = FakePrompt([None, 'wtf', 'Nooo', 'Nono', 'yeS', 'no'],
                                  type=yes_no)
 
     def test_typeyesno(self):
@@ -66,7 +94,7 @@ class TestTypeYesNo(TestCase):
 class TestTypeInt(TestCase):
 
     def setUp(self):
-        self.prompt = FakePrompt(['', 'wtf', 'No', '99'],
+        self.prompt = FakePrompt([None, 'wtf', 'No', '99', '100'],
                                  type=int)
 
     def test_typeint(self):
@@ -74,24 +102,44 @@ class TestTypeInt(TestCase):
         self.assertEqual(result, 99)
 
 
-class TestDefault(TestCase):
+class TestNullString(TestCase):
 
     def setUp(self):
-        self.prompt = FakePrompt([''], default='ok')
+        self.prompt = FakePrompt([''])
+
+    def test_typeint(self):
+        result = self.prompt.prompt('ok ?')
+        self.assertEqual(result, '')
+
+
+class TestEmpty(TestCase):
+
+    def setUp(self):
+        self.prompt = FakePrompt([None])
+
+    def test_typeint(self):
+        self.assertRaises(IndexError, self.prompt.prompt, 'ok ?')
+
+
+class TestNotDefault(TestCase):
+
+    def setUp(self):
+        self.prompt = FakePrompt(['ok'], default='ko')
 
     def test_default(self):
         result = self.prompt.prompt('ok or ko ?')
         self.assertEqual(result, 'ok')
 
 
-class TestDefaultChoices(TestCase):
+class TestEmptyDefault(TestCase):
 
     def setUp(self):
-        self.prompt = FakePrompt([''], default='other', choices=('ok', 'ko'))
+        self.prompt = FakePrompt([None], default='ok')
 
-    def test_choices(self):
+    def test_default(self):
         result = self.prompt.prompt('ok or ko ?')
-        self.assertEqual(result, 'other')
+        self.assertEqual(result, 'ok')
+
 
 class TestBuildPrompt(TestCase):
 
@@ -101,13 +149,15 @@ class TestBuildPrompt(TestCase):
     def test_prompt(self):
         self.assertEqual(self.prompt.build_prompt('ok'), 'ok ')
 
+
 class TestBuildPromptDefault(TestCase):
 
     def setUp(self):
         self.prompt = Prompt(default='yes')
 
     def test_prompt(self):
-        self.assertEqual(self.prompt.build_prompt('ok'), 'ok (default: yes) ')
+        self.assertEqual(self.prompt.build_prompt('ok'), 'ok (default: "yes") ')
+
 
 class TestBuildPromptDefault(TestCase):
 
@@ -115,7 +165,8 @@ class TestBuildPromptDefault(TestCase):
         self.prompt = Prompt(choices=('yes', 'no'))
 
     def test_prompt(self):
-        self.assertEqual(self.prompt.build_prompt('ok'), "ok ('yes', 'no') ")
+        self.assertEqual(self.prompt.build_prompt('ok'), 'ok (choices: "yes", "no") ')
+
 
 class TestBuildPromptType(TestCase):
 
@@ -123,4 +174,4 @@ class TestBuildPromptType(TestCase):
         self.prompt = Prompt(type=int)
 
     def test_prompt(self):
-        self.assertEqual(self.prompt.build_prompt('ok'), "ok (type: int) ")
+        self.assertEqual(self.prompt.build_prompt('ok'), 'ok (type: "int") ')
